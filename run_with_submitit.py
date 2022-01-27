@@ -14,19 +14,39 @@ from pathlib import Path
 import main as classification
 import submitit
 
+
 def parse_args():
     classification_parser = classification.get_args_parser()
-    parser = argparse.ArgumentParser("Submitit for ConvNeXt", parents=[classification_parser])
-    parser.add_argument("--ngpus", default=8, type=int, help="Number of gpus to request on each node")
-    parser.add_argument("--nodes", default=2, type=int, help="Number of nodes to request")
-    parser.add_argument("--timeout", default=72, type=int, help="Duration of the job, in hours")
+    parser = argparse.ArgumentParser(
+        "Submitit for ConvNeXt", parents=[classification_parser]
+    )
+    parser.add_argument(
+        "--ngpus", default=8, type=int, help="Number of gpus to request on each node"
+    )
+    parser.add_argument(
+        "--nodes", default=2, type=int, help="Number of nodes to request"
+    )
+    parser.add_argument(
+        "--timeout", default=72, type=int, help="Duration of the job, in hours"
+    )
     parser.add_argument("--job_name", default="convnext", type=str, help="Job name")
-    parser.add_argument("--job_dir", default="", type=str, help="Job directory; leave empty for default")
-    parser.add_argument("--partition", default="learnlab", type=str, help="Partition where to submit")
-    parser.add_argument("--use_volta32", action='store_true', default=True, help="Big models? Use this")
-    parser.add_argument('--comment', default="", type=str,
-                        help='Comment to pass to scheduler, e.g. priority message')
+    parser.add_argument(
+        "--job_dir", default="", type=str, help="Job directory; leave empty for default"
+    )
+    parser.add_argument(
+        "--partition", default="learnlab", type=str, help="Partition where to submit"
+    )
+    parser.add_argument(
+        "--use_volta32", action="store_true", default=True, help="Big models? Use this"
+    )
+    parser.add_argument(
+        "--comment",
+        default="",
+        type=str,
+        help="Comment to pass to scheduler, e.g. priority message",
+    )
     return parser.parse_args()
+
 
 def get_shared_folder() -> Path:
     user = os.getenv("USER")
@@ -36,6 +56,7 @@ def get_shared_folder() -> Path:
         return p
     raise RuntimeError("No shared folder available")
 
+
 def get_init_file():
     # Init file must not exist, but it's parent dir must exist.
     os.makedirs(str(get_shared_folder()), exist_ok=True)
@@ -43,6 +64,7 @@ def get_init_file():
     if init_file.exists():
         os.remove(str(init_file))
     return init_file
+
 
 class Trainer(object):
     def __init__(self, args):
@@ -78,7 +100,7 @@ class Trainer(object):
 
 def main():
     args = parse_args()
-    
+
     if args.job_dir == "":
         args.job_dir = get_shared_folder() / "%j"
 
@@ -91,9 +113,9 @@ def main():
     partition = args.partition
     kwargs = {}
     if args.use_volta32:
-        kwargs['slurm_constraint'] = 'volta32gb'
+        kwargs["slurm_constraint"] = "volta32gb"
     if args.comment:
-        kwargs['slurm_comment'] = args.comment
+        kwargs["slurm_comment"] = args.comment
 
     executor.update_parameters(
         mem_gb=40 * num_gpus_per_node,
@@ -105,7 +127,7 @@ def main():
         # Below are cluster dependent parameters
         slurm_partition=partition,
         slurm_signal_delay_s=120,
-        **kwargs
+        **kwargs,
     )
 
     executor.update_parameters(name=args.job_name)
@@ -117,6 +139,7 @@ def main():
     job = executor.submit(trainer)
 
     print("Submitted job_id:", job.job_id)
+
 
 if __name__ == "__main__":
     main()
