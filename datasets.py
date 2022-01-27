@@ -85,7 +85,7 @@ def build_transform(is_train, args):
         if not resize_im:
             transform.transforms[0] = transforms.RandomCrop(args.input_size, padding=4)
         if args.no_normalize:
-            del transform.transforms[-1]
+            del transform.transforms[-2]
         return transform
 
     t = []
